@@ -89,7 +89,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from  '../clients/supabase.js'
 import { addIcons } from 'ionicons'
 import { eyeOutline, eyeOffOutline, helpCircleOutline } from 'ionicons/icons'
-import InstallModal from '@/components/InstallButton.vue'
+import InstallModal from '../components/InstallButton.vue'
 
 // register icons
 addIcons({
@@ -126,10 +126,10 @@ async function login() {
     router.push('/scanner')
   }
 }
-
-export default {
-  components: { InstallModal }
+function togglePassword() {
+  showPassword.value = !showPassword.value
 }
+
 </script>
 
 <style scoped>
