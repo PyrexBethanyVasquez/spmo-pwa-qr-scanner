@@ -2,7 +2,7 @@
   <div class="scanner-page-pro">
     <header class="app-header">
       <ion-icon name="qr-code-outline" class="header-icon"></ion-icon>
-      <h1>Inventory QR Scanner</h1>
+      <h1>Ease See Scan</h1>
     </header>
 
     <div class="load-section">
@@ -64,9 +64,30 @@
           <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Name:</span> 
           <span class="detail-value">{{ item.name }}</span>
         </li>
+         <li>
+          <span class="detail-label"><ion-icon name="bookmark-outline"></ion-icon> Model:</span> 
+         <span class="detail-value">{{ item.model_brand }}</span>
+        </li>
+         <li>
+          <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Property No:</span> 
+          <span class="detail-value">{{ item.property_no }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Serial No:</span> 
+          <span class="detail-value">{{ item.serial_no }}</span>
+        </li>
+         <li>
+          <span class="detail-label"><ion-icon name="location-outline"></ion-icon> Location:</span> 
+          <span class="detail-value">{{ item.location }}</span>
+        </li>
+         
         <li>
           <span class="detail-label"><ion-icon name="alert-circle-outline"></ion-icon> Status:</span> 
           <span class="detail-value status" :class="statusClass(item.status)">{{ item.status }}</span>
+        </li>
+         <li>
+          <span class="detail-label"><ion-icon name="calendar-outline"></ion-icon> Date Acquired:</span> 
+          <span class="detail-value">{{ item.date_acquired }}</span>
         </li>
       </ul>
     </div>
