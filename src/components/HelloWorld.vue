@@ -80,6 +80,7 @@
         </div>
       </div>
     </form>
+    <InstallModal />
   </div>
 </template>
 <script setup>
@@ -88,6 +89,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from  '../clients/supabase.js'
 import { addIcons } from 'ionicons'
 import { eyeOutline, eyeOffOutline, helpCircleOutline } from 'ionicons/icons'
+import InstallModal from '@/components/InstallButton.vue'
 
 // register icons
 addIcons({
@@ -123,6 +125,10 @@ async function login() {
     console.log('Logged in successfully:', data)
     router.push('/scanner')
   }
+}
+
+export default {
+  components: { InstallModal }
 }
 </script>
 
