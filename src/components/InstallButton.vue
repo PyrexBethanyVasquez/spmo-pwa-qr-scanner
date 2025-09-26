@@ -1,7 +1,7 @@
 <template>
   <div v-if="showModal" class="modal-overlay">
     <div class="modal">
-      <h2>📲 Install SPMO QR Scanner</h2>
+      <h2>Install SPMO QR Scanner</h2>
       <p>For a faster experience, install the app to your home screen.</p>
       <div class="actions">
         <button @click="installApp" class="btn install">Install</button>
@@ -71,6 +71,11 @@ export default {
 }
 .modal h2 {
   margin-bottom: 10px;
+  color: black;
+}
+.modal p {
+  margin-bottom: 20px;
+  color: #333;
 }
 .actions {
   margin-top: 20px;
