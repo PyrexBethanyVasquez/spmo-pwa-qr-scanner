@@ -1,9 +1,17 @@
 <template>
   <div class="scanner-page-pro">
     <header class="app-header">
-      <ion-icon name="qr-code-outline" class="header-icon"></ion-icon>
-      <h1>Ease See Scan</h1>
-    </header>
+  <div class="header-left">
+    <ion-icon name="qr-code-outline" class="header-icon"></ion-icon>
+    <h1>Ease See Scan</h1>
+  </div>
+  <div class="header-end">
+    <button class="logout-icon-btn" @click="logout" title="Logout">
+      <ion-icon name="log-out-outline"></ion-icon>
+    </button>
+  </div>
+</header>
+
 
     <div class="load-section">
       <button 
@@ -33,7 +41,7 @@
         >
           <div v-if="!result && !streamError" class="scanner-overlay">
             <div class="scanner-line"></div>
-            <p class="overlay-text">Align QR code within the frame.</p>
+            <p class="overlay-text">Place QR code within the frame.</p>
           </div>
         </qrcode-stream>
       </div>
@@ -57,7 +65,7 @@
     <div v-if="item" class="item-card shadow-md">
       <h3>
         <ion-icon name="cube-outline"></ion-icon>
-        Item Details ({{ item.item_no }})
+        Item Details
       </h3>
       <ul class="item-details">
         <li>
@@ -83,7 +91,9 @@
          
         <li>
           <span class="detail-label"><ion-icon name="alert-circle-outline"></ion-icon> Status:</span> 
-          <span class="detail-value status" :class="statusClass(item.status)">{{ item.status }}</span>
+          <span class="detail-value status">
+            {{ item?.action?.action_name || 'Unknown' }}
+          </span>
         </li>
          <li>
           <span class="detail-label"><ion-icon name="calendar-outline"></ion-icon> Date Acquired:</span> 
@@ -92,10 +102,7 @@
       </ul>
     </div>
 
-    <button class="action-btn danger-btn logout-btn" @click="logout">
-      <ion-icon name="log-out-outline"></ion-icon>
-      Logout
-    </button>
+  
   </div>
 </template>
 
@@ -153,18 +160,21 @@ const loadAllItems = async () => {
   loadingMsg.value = 'Syncing inventory from server...'
   itemErrorMsg.value = null
   try {
-    const { data, error } = await supabase.from('items').select('*')
+    const { data, error } = await supabase.from('items').select(`
+    *,
+    action:status (action_id,action_name)
+  `)
     
     if (!error && data) {
       cachedItems.value = data
       await itemsDB.setItem('allItems', data)
-      loadingMsg.value = `✅ Successfully loaded ${data.length} items for offline use.`
+      loadingMsg.value = `Successfully loaded ${data.length} items for offline use.`
     } else {
-      loadingMsg.value = '❌ Failed to load items from Supabase.'
+      loadingMsg.value = 'Failed to load items from Supabase.'
       console.error('Supabase load error:', error)
     }
   } catch (err) {
-    loadingMsg.value = '🚨 Error loading items. Check connection.'
+    loadingMsg.value = 'Error loading items. Check connection.'
     console.error('Network or local storage error:', err)
   } finally {
     isLoadingAll.value = false
@@ -203,6 +213,7 @@ const logout = async () => {
 
 // Helper to paint a bounding box around the QR code (UX improvement)
 const paintBoundingBox = (detectedCodes, ctx) => {
+  if (!Array.isArray(detectedCodes) || !ctx) return;
   for (const detectedCode of detectedCodes) {
     const { 
       boundingBox: { x, y, width, height } 
@@ -217,7 +228,7 @@ const paintBoundingBox = (detectedCodes, ctx) => {
 // Computed property for status styling
 const statusClass = (status) => {
   if (!status) return 'default'
-  const normalizedStatus = status.toLowerCase()
+  const normalizedStatus = String(status).toLowerCase()
   if (normalizedStatus.includes('ok') || normalizedStatus.includes('good') || normalizedStatus.includes('active')) return 'status-ok'
   if (normalizedStatus.includes('broken') || normalizedStatus.includes('fault')) return 'status-bad'
   if (normalizedStatus.includes('pending') || normalizedStatus.includes('check')) return 'status-warn'
@@ -247,6 +258,7 @@ const statusClass = (status) => {
   margin-bottom: 2rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #e0e0e0;
+  justify-content: space-between;
 }
 .app-header h1 {
   font-size: 1.5rem;
@@ -299,11 +311,36 @@ const statusClass = (status) => {
 .action-btn.loading ion-icon {
   animation: spin 1s linear infinite;
 }
-
-.logout-btn { 
-  width: 100%; 
-  margin-top: 2rem;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
+
+.header-icon {
+  font-size: 1.5rem;
+}
+
+/* logout icon button */
+.logout-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626; /* red */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logout-icon-btn:hover {
+  background: #b91c1c;
+}
+
 
 .status-msg, .cache-status {
   margin-top: 0.5rem;
