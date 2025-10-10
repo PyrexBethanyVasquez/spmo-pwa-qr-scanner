@@ -1,5 +1,14 @@
+<script setup>
+import { RouterView } from 'vue-router'
+</script>
+
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <RouterView />
 </template>
+
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+}
+</style>
