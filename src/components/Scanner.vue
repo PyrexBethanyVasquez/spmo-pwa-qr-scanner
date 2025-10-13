@@ -222,6 +222,7 @@ const toggleSidebar = () => (sidebarOpen.value = !sidebarOpen.value)
 const cachedItems = ref([]);
 const actionOptions = ref([]);
 const pendingUpdates = ref([]);
+const transactions = ref([])
 
 const itemsDB = localforage.createInstance({ name: "itemsCache" });
 const actionDB = localforage.createInstance({ name: "actionCache" });
@@ -257,6 +258,7 @@ onMounted(async () => {
 
   await loadActions();
   await refreshPendingUpdates();
+  await fetchTransactions();
 });
 
 // --- Functions ---
@@ -313,6 +315,21 @@ const updateItemStatus = async (itemId, newStatusId) => {
     if (!error && data?.[0]) {
       if (index !== -1) cachedItems.value[index] = data[0];
       await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
+
+       const { error: txnError } = await supabase
+      .from("transaction")
+      .insert({
+        item_no: itemId,
+        action_id: newStatusId,
+        user_id: (await supabase.auth.getUser()).data.user.id,
+        date: new Date().toISOString()
+      });
+
+    if (txnError) {
+      console.error("Failed to record transaction:", txnError);
+      // Optionally queue transaction for offline sync
+    }
+
     } else {
       await queuePendingUpdate(itemId, newStatusId);
     }
@@ -323,6 +340,43 @@ const updateItemStatus = async (itemId, newStatusId) => {
   updateloadingMsg.value = "Item status updated successfully.";
   setTimeout(() => (updateloadingMsg.value = null), 3000);
 };
+
+const fetchTransactions = async () => {
+  const { data, error } = await supabase
+  .from('transaction')
+  .select(`
+    txn_id,
+    date,
+    item:item_id(
+      name,
+      item_no,
+      serial_no,
+      model_brand,
+      location,
+      dept_id(dept_name)
+    ),
+    action:action_id(action_name),
+    user:user_id(full_name)
+  `)
+  .order('date', { ascending: false });
+
+
+ transactions.value = data.map(txn => ({
+  id: txn.txn_id,
+  date: txn.date,
+  item_no: txn.item?.item_no || 'N/A',
+  item_name: txn.item?.name || 'N/A',
+  serial_no: txn.item?.serial_no || 'N/A',
+  model_brand: txn.item?.model_brand || 'N/A',
+  location: txn.item?.location || 'N/A',
+  dept_name: txn.item?.dept_id?.dept_name || 'N/A',  // department from item
+  status_name: txn.action?.action_name || 'Issued',
+  status_id: txn.action_id,
+  user_name: txn.user?.full_name || 'Admin',  // user who updated
+}));
+
+};
+
 
 const refreshPendingUpdates = async () => {
   const pending = await pendingUpdatesDB.getItem("updates") || [];
