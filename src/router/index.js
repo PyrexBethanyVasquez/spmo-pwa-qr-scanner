@@ -2,9 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/LoginPage.vue'
 import Scanner from '../components/Scanner.vue'
 import { supabase } from '../clients/supabase.js'
+import ForgotPassword from '../password_rest/ForgotPassword.vue'
+import ResetPassword from '../password_rest/ResetPassword.vue'
+
 
 const routes = [
   { path: '/', component: Login },
+  { path: '/email-verification', component: ForgotPassword },
+  { path: '/reset-password', component: ResetPassword },
   { path: '/scanner', component: Scanner, meta: { requiresAuth: true } },
 ]
 
