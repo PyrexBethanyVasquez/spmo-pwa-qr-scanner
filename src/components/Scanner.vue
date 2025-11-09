@@ -130,6 +130,15 @@
             <span class="detail-label"><ion-icon name="location-outline"></ion-icon> Location:</span>
             <span class="detail-value">{{ item.location }}</span>
           </li>
+           <li>
+            <span class="detail-label"><ion-icon name="business-outline"></ion-icon> Department:</span>
+            <span class="detail-value">{{ getDeptName(item.dept_id) }}</span>
+          </li>
+
+          <li>
+              <span class="detail-label"><ion-icon name="person-outline"></ion-icon> Recipient:</span>
+              <span class="detail-value">{{ getRecipientName(item.indiv_txn_id) }}</span>
+          </li>
           <li>
             <span class="detail-label"><ion-icon name="calendar-outline"></ion-icon> Date Acquired:</span>
             <span class="detail-value">{{ item.date_acquired }}</span>
@@ -222,10 +231,14 @@ const toggleSidebar = () => (sidebarOpen.value = !sidebarOpen.value)
 const cachedItems = ref([]);
 const actionOptions = ref([]);
 const pendingUpdates = ref([]);
-const transactions = ref([])
+const transactions = ref([]);
+const departments = ref([]);
+const indivTransactions = ref([]);
 
 const itemsDB = localforage.createInstance({ name: "itemsCache" });
 const actionDB = localforage.createInstance({ name: "actionCache" });
+const deptDB = localforage.createInstance({ name: "deptCache" });
+const indivDB = localforage.createInstance({ name: "indivTransactionCache" });
 const pendingUpdatesDB = localforage.createInstance({ name: "pendingUpdates" });
 
 const router = useRouter();
@@ -257,6 +270,8 @@ onMounted(async () => {
   if (savedUpdates) pendingUpdates.value = savedUpdates;
 
   await loadActions();
+  await loadDepartment();
+  await loadIndivTransactions();
   await refreshPendingUpdates();
   await fetchTransactions();
 });
@@ -266,7 +281,7 @@ const loadAllItems = async () => {
   isLoadingAll.value = true;
   loadingMsg.value = "Syncing inventory from server...";
   try {
-    const { data, error } = await supabase.from("items").select(`*, action:status(action_id,action_name)`);
+    const { data, error } = await supabase.from("items").select(`*, action:status(action_id,action_name),dept_id`);
     if (!error && data) {
       cachedItems.value = data;
       await itemsDB.setItem("allItems", data);
@@ -280,6 +295,64 @@ const loadAllItems = async () => {
     isLoadingAll.value = false;
     setTimeout(() => (loadingMsg.value = null), 4000);
   }
+};
+
+const loadDepartment = async () => {
+  // Load cached version first
+  const localDept = await deptDB.getItem("allDepartments");
+  if (localDept) departments.value = localDept;
+
+  // If online, fetch latest from Supabase
+  if (navigator.onLine) {
+    const { data, error } = await supabase.from("department").select("*");
+    if (!error && data) {
+      departments.value = data;
+      await deptDB.setItem("allDepartments", data);
+      console.log(`Loaded ${data.length} departments from Supabase.`);
+    } else {
+      console.error("Error loading departments:", error);
+    }
+  }
+};
+
+
+const getDeptName = (deptId) => {
+  if (!deptId) return "N/A";
+  const dept = departments.value.find(d => d.dept_id === deptId);
+  return dept ? dept.dept_name : "Unknown Department";
+};
+
+const loadIndivTransactions = async () => {
+  try {
+    // 1️⃣ Load cached version first
+    const cachedData = await indivDB.getItem("allIndivTransactions");
+    if (cachedData) indivTransactions.value = cachedData;
+
+    // 2️⃣ If online, fetch latest from Supabase
+    if (navigator.onLine) {
+      const { data, error } = await supabase
+        .from("individual_transaction")
+        .select("*");
+
+      if (!error && data) {
+        indivTransactions.value = data;
+        await indivDB.setItem("allIndivTransactions", data);
+        console.log(`Loaded ${data.length} individual transactions from Supabase.`);
+      } else if (error) {
+        console.error("Error loading individual transactions:", error);
+      }
+    }
+  } catch (err) {
+    console.error("Error in loadIndivTransactions:", err);
+  }
+};
+
+// Get recipient name by indiv_txn_id
+const getRecipientName = (indivTxnId) => {
+  if (!indivTxnId) return "N/A";
+
+  const record = indivTransactions.value.find(txn => txn.indiv_txn_id === indivTxnId);
+  return record ? record.recipient_name : "Unknown Recipient";
 };
 
 const loadActions = async () => {
@@ -311,23 +384,28 @@ const updateItemStatus = async (itemId, newStatusId) => {
       .from("items")
       .update({ status: newStatusId })
       .eq("item_no", itemId)
-      .select(`*, action:status(action_id,action_name)`);
+      .select(`*, action:status(action_id,action_name), dept_id, indiv_txn_id`);
     if (!error && data?.[0]) {
       if (index !== -1) cachedItems.value[index] = data[0];
       await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
 
+      const deptId = data[0].dept_id;
+      const recipientName = data[0].indiv_txn_id; 
+      
        const { error: txnError } = await supabase
       .from("transaction")
       .insert({
         item_no: itemId,
         action_id: newStatusId,
+        dept_id: deptId,
+        indiv_txn_id: recipientName,
         user_id: (await supabase.auth.getUser()).data.user.id,
         date: new Date().toISOString()
       });
 
     if (txnError) {
       console.error("Failed to record transaction:", txnError);
-      // Optionally queue transaction for offline sync
+      // queue transaction for offline sync
     }
 
     } else {
@@ -347,13 +425,14 @@ const fetchTransactions = async () => {
   .select(`
     txn_id,
     date,
-    item:item_id(
+    item:item_no(
       name,
       item_no,
       serial_no,
       model_brand,
       location,
-      dept_id(dept_name)
+      dept_id(dept_name),
+      indiv_txn_id(recipient_name)
     ),
     action:action_id(action_name),
     user:user_id(full_name)
@@ -370,6 +449,7 @@ const fetchTransactions = async () => {
   model_brand: txn.item?.model_brand || 'N/A',
   location: txn.item?.location || 'N/A',
   dept_name: txn.item?.dept_id?.dept_name || 'N/A',  // department from item
+  recipient_name: txn.item?.indiv_txn_id?.recipient_name || 'N/A',  // recipient from indiv_txn
   status_name: txn.action?.action_name || 'Issued',
   status_id: txn.action_id,
   user_name: txn.user?.full_name || 'Admin',  // user who updated
