@@ -101,82 +101,100 @@
 
     </div>
 
-    <!-- Item Modal -->
-    <div v-if="item" class="slide-up-modal-overlay" @click.self="closeModal">
-      <div class="slide-up-modal">
-        <header class="modal-header">
-          <h3><ion-icon name="cube-outline"></ion-icon> Item Details</h3>
-          <button class="close-btn" @click="closeModal">&times;</button>
-        </header>
+   <!-- Item Modal -->
+<div v-if="item" class="slide-up-modal-overlay" @click.self="closeModal">
+  <div class="slide-up-modal">
+    
+    <!-- Header -->
+    <header class="modal-header">
+      <h3><ion-icon name="cube-outline"></ion-icon> Item Details</h3>
+      <button class="close-btn" @click="closeModal">&times;</button>
+    </header>
 
-        <ul class="item-details">
-          <li>
-            <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Name:</span>
-            <span class="detail-value">{{ item.name }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="bookmark-outline"></ion-icon> Model:</span>
-            <span class="detail-value">{{ item.model_brand }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Property No:</span>
-            <span class="detail-value">{{ item.property_no }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Serial No:</span>
-            <span class="detail-value">{{ item.serial_no }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="location-outline"></ion-icon> Location:</span>
-            <span class="detail-value">{{ item.location }}</span>
-          </li>
-           <li>
-            <span class="detail-label"><ion-icon name="business-outline"></ion-icon> Department:</span>
-            <span class="detail-value">{{ getDeptName(item.dept_id) }}</span>
-          </li>
+    <!-- Item Info Section -->
+    <section class="modal-section">
+      <h4>General Information</h4>
+      <ul class="item-details">
+        <li>
+          <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Name:</span>
+          <span class="detail-value">{{ item.name }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="bookmark-outline"></ion-icon> Model:</span>
+          <span class="detail-value">{{ item.model_brand }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Property No:</span>
+          <span class="detail-value">{{ item.property_no }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="document-text-outline"></ion-icon> Serial No:</span>
+          <span class="detail-value">{{ item.serial_no }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="location-outline"></ion-icon> Location:</span>
+          <span class="detail-value">{{ item.location }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="business-outline"></ion-icon> Department:</span>
+          <span class="detail-value">{{ getDeptName(item.dept_id) }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="business-outline"></ion-icon> Purchase Order No:</span>
+          <span class="detail-value">
+            {{ getPOInfo(item.po_no).po_no || "N/A" }}
+          </span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="person-outline"></ion-icon> Recipient:</span>
+          <span class="detail-value">{{ getRecipientName(item.indiv_txn_id) }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="calendar-outline"></ion-icon> Date Acquired:</span>
+          <span class="detail-value">{{ item.date_acquired }}</span>
+        </li>
+        <li>
+          <span class="detail-label"><ion-icon name="alert-circle-outline"></ion-icon> Status:</span>
+          <span class="status-badge" :class="item?.action?.action_name.toLowerCase() || 'unknown'">
+            {{ item?.action?.action_name || "Unknown" }}
+          </span>
+        </li>
+      </ul>
+    </section>
 
-          <li>
-              <span class="detail-label"><ion-icon name="person-outline"></ion-icon> Recipient:</span>
-              <span class="detail-value">{{ getRecipientName(item.indiv_txn_id) }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="calendar-outline"></ion-icon> Date Acquired:</span>
-            <span class="detail-value">{{ item.date_acquired }}</span>
-          </li>
-          <li>
-            <span class="detail-label"><ion-icon name="alert-circle-outline"></ion-icon> Status:</span>
-            <span class="detail-value status">{{ item?.action?.action_name || "Unknown" }}</span>
-          </li>
+    <hr />
 
-          <!-- Status Update -->
-          <li class="status-update">
-            <label class="status-label">Change Status:</label>
-            <div class="custom-select-btn" @click="toggleDropdown = true">
-              {{ selectedStatusName || "-- Select Action --" }}
-              <ion-icon name="chevron-up-outline" v-if="toggleDropdown"></ion-icon>
-              <ion-icon name="chevron-down-outline" v-else></ion-icon>
-            </div>
+    <!-- Status Update Section -->
+    <section class="modal-section">
+      <h4>Update Status</h4>
 
-            <!-- Dropdown -->
-            <transition name="slide-up">
-              <div v-if="toggleDropdown" class="slide-up-modal-overlay" @click.self="toggleDropdown = false">
-                <div class="slide-up-modal">
-                  <ul>
-                    <li v-for="action in actionOptions" :key="action.action_id" @click="selectAction(action)">
-                      {{ action.action_name }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </transition>
+      <div class="status-update">
+        <!-- Select Action -->
+        <div class="custom-select">
+          <div class="custom-select-btn" @click="toggleDropdown = !toggleDropdown">
+            {{ selectedStatusName || "-- Select Action --" }}
+            <ion-icon :name="toggleDropdown ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </div>
 
-            <button class="update-btn" :disabled="!selectedStatus" @click="confirmUpdateStatus">
-              Update Status
-            </button>
-          </li>
-        </ul>
+          <transition name="fade">
+            <ul v-if="toggleDropdown" class="custom-dropdown">
+              <li v-for="action in actionOptions" :key="action.action_id" @click="selectAction(action)">
+                {{ action.action_name }}
+              </li>
+            </ul>
+          </transition>
+        </div>
+
+        <!-- Update Button -->
+        <button class="update-btn" :disabled="!selectedStatus" @click="confirmUpdateStatus">
+          Update Status
+        </button>
       </div>
-    </div>
+    </section>
+
+  </div>
+</div>
+
 
     <!-- Toast Notifications -->
     <div v-if="updateloadingMsg" class="toast-notification">
@@ -184,16 +202,37 @@
       <p>{{ updateloadingMsg }}</p>
     </div>
 
-    <div class="user-log" v-if="userLogs.length">
-      <h3>User Update Log</h3>
-      <ul>
-        <li v-for="(log, index) in userLogs" :key="index">
-          <ion-icon name="create-outline"></ion-icon>
-          <b>{{ log.itemName }}</b> ({{ log.itemNo }}) → <i>{{ log.newStatus }}</i>
-          <span class="log-time">{{ log.time }}</span>
+<!-- Toggle button for User Update Log -->
+<div class="user-log-wrapper">
+  <button class="toggle-log-btn" @click="showUserLog = !showUserLog">
+    <ion-icon name="time-outline"></ion-icon>
+    User Update Log
+    <ion-icon :name="showUserLog ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+  </button>
+
+  <!-- Collapsible User Update Log Feed -->
+  <transition name="slide-fade">
+    <div class="user-log" v-if="showUserLog">
+      <ul class="log-list">
+        <li v-for="(log, index) in userLogs" :key="index" class="log-entry">
+         
+          <div class="feed-content">
+            <div class="feed-text">
+              <strong>{{ user?.user_metadata?.full_name || 'Staff' }}</strong>
+              {{ log.newStatus.toLowerCase() }} item
+              <strong>{{ log.itemName }}</strong> ({{ log.itemNo }})
+            </div>
+
+            <div class="feed-time">{{ log.time }}</div>
+          </div>
         </li>
+        <li v-if="userLogs.length === 0" class="no-data">No updates yet.</li>
       </ul>
     </div>
+  </transition>
+</div>
+
+
 
     <div v-if="loadingMsg" class="toast-notification">
       <ion-icon name="checkmark-circle-outline" class="toast-icon"></ion-icon>
@@ -227,17 +266,20 @@ const userLogs = ref([]);
 const isOnline = ref(navigator.onLine);
 const sidebarOpen = ref(false)
 const toggleSidebar = () => (sidebarOpen.value = !sidebarOpen.value)
+const showUserLog = ref(false);
 
 const cachedItems = ref([]);
 const actionOptions = ref([]);
 const pendingUpdates = ref([]);
 const transactions = ref([]);
 const departments = ref([]);
+const purchaseOrders = ref([]);
 const indivTransactions = ref([]);
 
 const itemsDB = localforage.createInstance({ name: "itemsCache" });
 const actionDB = localforage.createInstance({ name: "actionCache" });
 const deptDB = localforage.createInstance({ name: "deptCache" });
+const poDB = localforage.createInstance({ name: "poCache" });
 const indivDB = localforage.createInstance({ name: "indivTransactionCache" });
 const pendingUpdatesDB = localforage.createInstance({ name: "pendingUpdates" });
 
@@ -271,9 +313,11 @@ onMounted(async () => {
 
   await loadActions();
   await loadDepartment();
+  await loadPurchaseOrders();
   await loadIndivTransactions();
   await refreshPendingUpdates();
   await fetchTransactions();
+
 });
 
 // --- Functions ---
@@ -281,7 +325,7 @@ const loadAllItems = async () => {
   isLoadingAll.value = true;
   loadingMsg.value = "Syncing inventory from server...";
   try {
-    const { data, error } = await supabase.from("items").select(`*, action:status(action_id,action_name),dept_id`);
+    const { data, error } = await supabase.from("items").select(`*, action:status(action_id,action_name),po_no,dept_id`);
     if (!error && data) {
       cachedItems.value = data;
       await itemsDB.setItem("allItems", data);
@@ -320,6 +364,31 @@ const getDeptName = (deptId) => {
   if (!deptId) return "N/A";
   const dept = departments.value.find(d => d.dept_id === deptId);
   return dept ? dept.dept_name : "Unknown Department";
+};
+
+const loadPurchaseOrders = async () => {
+  // Load cached version first
+  const localPOs = await poDB.getItem("allPurchaseOrders");
+  if (localPOs) purchaseOrders.value = localPOs;
+
+  // If online, fetch latest from Supabase
+  if (navigator.onLine) {
+    const { data, error } = await supabase.from("purchase_order").select("*");
+    if (!error && data) {
+      purchaseOrders.value = data;
+      await poDB.setItem("allPurchaseOrders", data);
+      console.log(`Loaded ${data.length} purchase orders from Supabase.`);
+    } else {
+      console.error("Error loading purchase orders:", error);
+    }
+  }
+};
+
+// Helper function to get PO info by ID
+const getPOInfo = (poId) => {
+  if (!poId) return "N/A";
+  const po = purchaseOrders.value.find(p => p.po_no === poId);
+  return po ? po.po_no : "Unknown PO";
 };
 
 const loadIndivTransactions = async () => {
@@ -384,7 +453,7 @@ const updateItemStatus = async (itemId, newStatusId) => {
       .from("items")
       .update({ status: newStatusId })
       .eq("item_no", itemId)
-      .select(`*, action:status(action_id,action_name), dept_id, indiv_txn_id`);
+      .select(`*, action:status(action_id,action_name), po_no, dept_id, indiv_txn_id`);
     if (!error && data?.[0]) {
       if (index !== -1) cachedItems.value[index] = data[0];
       await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
@@ -400,7 +469,8 @@ const updateItemStatus = async (itemId, newStatusId) => {
         dept_id: deptId,
         indiv_txn_id: recipientName,
         user_id: (await supabase.auth.getUser()).data.user.id,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        activity: 'update'
       });
 
     if (txnError) {
@@ -453,6 +523,7 @@ const fetchTransactions = async () => {
   status_name: txn.action?.action_name || 'Issued',
   status_id: txn.action_id,
   user_name: txn.user?.full_name || 'Admin',  // user who updated
+  activity
 }));
 
 };
@@ -546,11 +617,13 @@ const confirmUpdateStatus = async () => {
   await updateItemStatus(item.value.item_no, selectedStatus.value);
 
   const selStatus = actionOptions.value.find(a => a.action_id === selectedStatus.value);
-  userLogs.value.unshift({
+    userLogs.value.unshift({
     itemName: item.value.name,
     itemNo: item.value.item_no,
     newStatus: selStatus?.action_name || "Unknown",
     time: new Date().toLocaleString(),
+    user: user, // store the user object
+    showStatus: false,
   });
 
   selectedStatus.value = "";
@@ -566,5 +639,6 @@ const selectAction = (action) => {
   selectedStatus.value = action.action_id;
   toggleDropdown.value = false;
 };
+
 </script>
 
