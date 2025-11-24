@@ -142,7 +142,7 @@
         <li>
           <span class="detail-label"><ion-icon name="business-outline"></ion-icon> Purchase Order No:</span>
           <span class="detail-value">
-            {{ getPOInfo(item.po_no).po_no || "N/A" }}
+            {{ getPOInfo(item.po_no) || "N/A" }}
           </span>
         </li>
         <li>
@@ -459,6 +459,7 @@ const updateItemStatus = async (itemId, newStatusId) => {
       await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
 
       const deptId = data[0].dept_id;
+      const poId = data[0].po_no;
       const recipientName = data[0].indiv_txn_id; 
       
        const { error: txnError } = await supabase
@@ -467,6 +468,7 @@ const updateItemStatus = async (itemId, newStatusId) => {
         item_no: itemId,
         action_id: newStatusId,
         dept_id: deptId,
+        po_no: poId,
         indiv_txn_id: recipientName,
         user_id: (await supabase.auth.getUser()).data.user.id,
         date: new Date().toISOString(),
@@ -502,6 +504,7 @@ const fetchTransactions = async () => {
       model_brand,
       location,
       dept_id(dept_name),
+      po_no,
       indiv_txn_id(recipient_name)
     ),
     action:action_id(action_name),
@@ -519,6 +522,7 @@ const fetchTransactions = async () => {
   model_brand: txn.item?.model_brand || 'N/A',
   location: txn.item?.location || 'N/A',
   dept_name: txn.item?.dept_id?.dept_name || 'N/A',  // department from item
+  po_no: txn.item?.po_no || 'N/A',
   recipient_name: txn.item?.indiv_txn_id?.recipient_name || 'N/A',  // recipient from indiv_txn
   status_name: txn.action?.action_name || 'Issued',
   status_id: txn.action_id,
