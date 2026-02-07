@@ -988,6 +988,7 @@
 .status-badge.transferred { background: #029cd9; }
 .status-badge.disposed { background: #c0392b; }
 .status-badge.default { background: #607d8b; }
+.status-badge.canceled { background: #000000; }
 
 .custom-dropdown {
   position: absolute;
@@ -1167,3 +1168,149 @@
   transform: translateY(-10px);
 }
 
+.item-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item-details li {
+  display: grid;
+  grid-template-columns: 220px 1fr; /* left label | right value */
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.detail-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.detail-value {
+  color: #111827;
+  word-break: break-word;
+}
+
+/* Status badge stays aligned on right */
+.status-badge {
+  justify-self: start;
+}
+
+
+@media (max-width: 640px) {
+  .item-details li {
+    grid-template-columns: 180px 1fr; /* narrower label column */
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .detail-value {
+    font-size: 0.85rem;
+  }
+}
+
+/* --- Notes Section --- */
+.notes-section {
+  margin-top: 16px;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.notes-header ion-icon {
+  font-size: 1.2rem;
+  color: #4A90E2;
+}
+
+.notes-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notes-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.notes-input:focus {
+  outline: none;
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.btn-add-note {
+  align-self: flex-end;
+  padding: 6px 14px;
+  background-color: #4A90E2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add-note:hover {
+  background-color: #357ABD;
+}
+
+.notes-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.notes-list li {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background-color: #f3f4f6;
+  margin-bottom: 6px;
+}
+
+.note-text {
+  margin: 0;
+  color: #111827;
+}
+
+.note-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Transition for smooth open/close */
+.fade-enter-active, .fade-leave-active {
+  transition: all 0.25s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}

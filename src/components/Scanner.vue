@@ -146,7 +146,7 @@
           </span>
         </li>
         <li>
-          <span class="detail-label"><ion-icon name="person-outline"></ion-icon> Recipient:</span>
+          <span class="detail-label"><ion-icon name="person-outline"></ion-icon> Accountable Officer:</span>
           <span class="detail-value">{{ getRecipientName(item.indiv_txn_id) }}</span>
         </li>
         <li>
@@ -159,38 +159,65 @@
             {{ item?.action?.action_name || "Unknown" }}
           </span>
         </li>
+     
+
       </ul>
     </section>
 
     <hr />
 
-    <!-- Status Update Section -->
-    <section class="modal-section">
-      <h4>Update Status</h4>
+ <!-- Status Update Section -->
+<section class="modal-section">
+  <h4>Update Status</h4>
 
-      <div class="status-update">
-        <!-- Select Action -->
-        <div class="custom-select">
-          <div class="custom-select-btn" @click="toggleDropdown = !toggleDropdown">
-            {{ selectedStatusName || "-- Select Action --" }}
-            <ion-icon :name="toggleDropdown ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
-          </div>
-
-          <transition name="fade">
-            <ul v-if="toggleDropdown" class="custom-dropdown">
-              <li v-for="action in actionOptions" :key="action.action_id" @click="selectAction(action)">
-                {{ action.action_name }}
-              </li>
-            </ul>
-          </transition>
-        </div>
-
-        <!-- Update Button -->
-        <button class="update-btn" :disabled="!selectedStatus" @click="confirmUpdateStatus">
-          Update Status
-        </button>
+  <div class="status-update">
+    <!-- Select Action -->
+    <div class="custom-select">
+      <div class="custom-select-btn" @click="toggleDropdown = !toggleDropdown">
+        {{ selectedStatusName || "-- Select Action --" }}
+        <ion-icon :name="toggleDropdown ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
       </div>
-    </section>
+
+      <transition name="fade">
+        <ul v-if="toggleDropdown" class="custom-dropdown">
+          <li v-for="action in actionOptions" :key="action.action_id" @click="selectAction(action)">
+            {{ action.action_name }}
+          </li>
+        </ul>
+      </transition>
+    </div>
+
+    
+     <!-- Notes Section -->
+  <div class="notes-section">
+    <div class="notes-header" @click="showNotesInput = !showNotesInput">
+      <br>
+      <ion-icon :name="showNotesInput ? 'remove-circle-outline' : 'add-circle-outline'"></ion-icon>
+      {{ showNotesInput ? 'Cancel' : 'Add Remarks' }}
+    </div>
+
+    <transition name="fade">
+      <div v-if="showNotesInput" class="notes-input-container">
+        <textarea
+          v-model="newNote"
+          class="notes-input"
+          placeholder="Write your remarks..."
+          rows="3"
+        ></textarea>
+      </div>
+    </transition>
+  </div>
+
+    <!-- Update Button -->
+    <button class="update-btn" :disabled="!selectedStatus" @click="confirmUpdateStatus">
+      Update Status
+    </button>
+
+  </div>
+
+ 
+</section>
+
 
   </div>
 </div>
@@ -249,8 +276,10 @@ import { QrcodeStream } from "vue3-qrcode-reader";
 import { supabase } from "../clients/supabase.js";
 import { useRouter } from "vue-router";
 import localforage from "localforage";
+import { useToast } from 'vue-toastification'
 
 // --- Reactive State ---
+const toast = useToast()
 const user = ref(null)
 const role = ref('user')
 const result = ref(null);
@@ -267,6 +296,10 @@ const isOnline = ref(navigator.onLine);
 const sidebarOpen = ref(false)
 const toggleSidebar = () => (sidebarOpen.value = !sidebarOpen.value)
 const showUserLog = ref(false);
+const notes = ref([])
+const newNote = ref('')
+const showNotesInput = ref(false)
+
 
 const cachedItems = ref([]);
 const actionOptions = ref([]);
@@ -317,6 +350,7 @@ onMounted(async () => {
   await loadIndivTransactions();
   await refreshPendingUpdates();
   await fetchTransactions();
+  await fetchNotes(item.item_no);
 
 });
 
@@ -325,7 +359,7 @@ const loadAllItems = async () => {
   isLoadingAll.value = true;
   loadingMsg.value = "Syncing inventory from server...";
   try {
-    const { data, error } = await supabase.from("items").select(`*, action:status(action_id,action_name),po_no,dept_id`);
+    const { data, error } = await supabase.from("active_items").select(`*, action:status(action_id,action_name),po_no,dept_id`);
     if (!error && data) {
       cachedItems.value = data;
       await itemsDB.setItem("allItems", data);
@@ -360,6 +394,39 @@ const loadDepartment = async () => {
 };
 
 
+async function fetchNotes(itemNo, actionId = null) {
+  if (!itemNo) return;
+
+  let query = supabase
+    .from('action_notes')
+    .select('*')
+    .eq('item_no', itemNo);
+
+  if (actionId) {
+    query = query.eq('action_id', actionId);
+  }
+
+  query = query.order('created_at', { ascending: true });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching notes:', error.message);
+    notes.value = [];
+  } else {
+    notes.value = data || [];
+    console.log('Fetched notes:', notes.value);
+  }
+}
+
+
+
+
+function formatDate(date) {
+  return new Date(date).toLocaleString()
+}
+
+
 const getDeptName = (deptId) => {
   if (!deptId) return "N/A";
   const dept = departments.value.find(d => d.dept_id === deptId);
@@ -386,10 +453,13 @@ const loadPurchaseOrders = async () => {
 
 // Helper function to get PO info by ID
 const getPOInfo = (poId) => {
-  if (!poId) return "N/A";
-  const po = purchaseOrders.value.find(p => p.po_no === poId);
-  return po ? po.po_no : "Unknown PO";
-};
+  if (!poId) return "N/A"
+
+  const po = purchaseOrders.value.find(p => p.po_no === poId)
+
+  return po?.purchase_order_number || "Unknown PO"
+}
+
 
 const loadIndivTransactions = async () => {
   try {
@@ -449,43 +519,19 @@ const updateItemStatus = async (itemId, newStatusId) => {
   }
 
   if (navigator.onLine) {
-    const { data, error } = await supabase
-      .from("items")
-      .update({ status: newStatusId })
-      .eq("item_no", itemId)
-      .select(`*, action:status(action_id,action_name), po_no, dept_id, indiv_txn_id`);
-    if (!error && data?.[0]) {
-      if (index !== -1) cachedItems.value[index] = data[0];
-      await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
+  const { data, error } = await supabase
+    .from("active_items")
+    .update({ status: newStatusId })
+    .eq("item_no", itemId)
+    .select(`*, action:status(action_id,action_name), po_no, dept_id, indiv_txn_id`);
 
-      const deptId = data[0].dept_id;
-      const poId = data[0].po_no;
-      const recipientName = data[0].indiv_txn_id; 
-      
-       const { error: txnError } = await supabase
-      .from("transaction")
-      .insert({
-        item_no: itemId,
-        action_id: newStatusId,
-        dept_id: deptId,
-        po_no: poId,
-        indiv_txn_id: recipientName,
-        user_id: (await supabase.auth.getUser()).data.user.id,
-        date: new Date().toISOString(),
-        activity: 'update'
-      });
-
-    if (txnError) {
-      console.error("Failed to record transaction:", txnError);
-      // queue transaction for offline sync
-    }
-
-    } else {
-      await queuePendingUpdate(itemId, newStatusId);
-    }
+  if (!error && data?.[0]) {
+    if (index !== -1) cachedItems.value[index] = data[0];
+    await itemsDB.setItem('allItems', JSON.parse(JSON.stringify(cachedItems.value)));
   } else {
     await queuePendingUpdate(itemId, newStatusId);
   }
+}
 
   updateloadingMsg.value = "Item status updated successfully.";
   setTimeout(() => (updateloadingMsg.value = null), 3000);
@@ -618,31 +664,76 @@ const closeModal = () => {
 
 const confirmUpdateStatus = async () => {
   if (!selectedStatus.value || !item.value) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 1. Update item status
   await updateItemStatus(item.value.item_no, selectedStatus.value);
 
+  // 2. Record transaction, including note if any
+  const transactionData = {
+    item_no: item.value.item_no,
+    action_id: selectedStatus.value,
+    dept_id: item.value.dept_id,
+    po_no: item.value.po_no,
+    indiv_txn_id: item.value.indiv_txn_id,
+    user_id: user?.id,
+    date: new Date().toISOString(),
+    activity: 'update',
+    note_text: newNote.value.trim() || null,
+
+  };
+
+  if (newNote.value.trim()) {
+    transactionData.note_text = newNote.value.trim(); // attach note
+  }
+
+  const { error: txnError } = await supabase
+    .from('transaction')
+    .insert(transactionData);
+
+  if (txnError) {
+    console.error("Failed to save transaction:", txnError);
+    toast.error("Failed to save transaction");
+  } else {
+    toast.success("Status updated" + (newNote.value ? " & note added" : ""));
+    newNote.value = ""; // clear input
+  }
+
+  // 3. Optionally fetch updated notes for UI
+  await fetchNotes(item.value.item_no);
+
+  // 4. Log locally for UI
   const selStatus = actionOptions.value.find(a => a.action_id === selectedStatus.value);
-    userLogs.value.unshift({
+  userLogs.value.unshift({
     itemName: item.value.name,
     itemNo: item.value.item_no,
     newStatus: selStatus?.action_name || "Unknown",
     time: new Date().toLocaleString(),
-    user: user, // store the user object
+    user: user,
+  
     showStatus: false,
   });
 
+  // Reset
   selectedStatus.value = "";
-  closeModal();
+  toggleDropdown.value = false;
 };
+
 
 const selectedStatusName = computed(() => {
   const sel = actionOptions.value.find(a => a.action_id === selectedStatus.value);
   return sel ? sel.action_name : "";
 });
 
-const selectAction = (action) => {
+async function selectAction(action) {
   selectedStatus.value = action.action_id;
   toggleDropdown.value = false;
-};
+
+  if (item.value && selectedStatus.value) {
+    await fetchNotes(item.value.item_no, selectedStatus.value);
+  }
+}
 
 </script>
 
